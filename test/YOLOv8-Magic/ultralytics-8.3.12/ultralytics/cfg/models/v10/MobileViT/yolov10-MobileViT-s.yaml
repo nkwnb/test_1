@@ -1,0 +1,40 @@
+# Parameters
+nc: 80 # number of classes
+scales:
+depth_multiple: 1.0 # model depth multiple
+width_multiple: 1.0 # layer channel multiple
+
+# MobileViT backbone
+backbone:
+  # [from, repeats, module, args]
+  - [-1, 1, Conv, [16, 3, 2]] # 0-P1/2
+  - [-1, 1, MV2Block, [32, 1, 4]] # 1
+  - [-1, 1, MV2Block, [64, 2, 4]] # 2-p2
+  - [-1, 1, MV2Block, [64, 1, 4]] # 3
+  - [-1, 1, MV2Block, [64, 1, 4]] # 4
+  - [-1, 1, MV2Block, [96, 2, 4]] # 5-P3
+  - [-1, 1, MobileViTBlock, [144, 2, 3, 2, 288, 0]] # out 6
+  - [-1, 1, MV2Block, [128, 2, 4]] # 7-P4
+  - [-1, 1, MobileViTBlock, [192, 4, 3, 2, 384, 0]] # out 8
+  - [-1, 1, MV2Block, [160, 2, 4]] # 9-p5
+  - [-1, 1, MobileViTBlock, [240, 3, 3, 1, 480, 0]] # out 10
+
+# YOLOv10 head
+head:
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
+  - [[-1, 8], 1, Concat, [1]] # cat backbone P4
+  - [-1, 1, C2f, [120]] # 13
+
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
+  - [[-1, 6], 1, Concat, [1]] # cat backbone P3
+  - [-1, 1, C2f, [60]] # 16 (P3/8-small)
+
+  - [-1, 1, Conv, [60, 3, 2]]
+  - [[-1, 13], 1, Concat, [1]] # cat head P4
+  - [-1, 1, C2fCIB, [120, True]] # 19 (P4/16-medium)
+
+  - [-1, 1, Conv, [120, 3, 2]]
+  - [[-1, 10], 1, Concat, [1]] # cat head P5
+  - [-1, 1, C2fCIB, [240, True]] # 22 (P5/32-large)
+
+  - [[16, 19, 22], 1, v10Detect, [nc]] # Detect(P3, P4, P5)

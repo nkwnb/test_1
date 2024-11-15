@@ -1,0 +1,53 @@
+# Ultralytics YOLO 🚀, AGPL-3.0 license
+# YOLOv8 object detection model with P3-P5 outputs. For Usage examples see https://blog.csdn.net/weixin_43694096
+
+# Parameters
+nc: 80 # number of classes
+scales: # model compound scaling constants, i.e. 'model=yolov8n.yaml' will call yolov8.yaml with scale 'n'
+  # [depth, width, max_channels]
+  n: [0.33, 0.25, 1024]
+  s: [0.33, 0.50, 1024]
+  m: [0.67, 0.75, 768]
+  l: [1.00, 1.00, 512]
+  x: [1.00, 1.25, 512]
+
+# YOLOv8.0n backbone
+backbone:
+  # [from, repeats, module, args]
+  - [-1, 1, Conv_BN_HSwish, [16, 2]] # 0-p1/2
+  - [-1, 1, MobileNetV3_InvertedResidual, [16, 16, 3, 2, 1, 0]] # 1-p2/4
+  - [-1, 1, MobileNetV3_InvertedResidual, [24, 72, 3, 2, 0, 0]] # 2-p3/8
+  - [-1, 1, MobileNetV3_InvertedResidual, [24, 88, 3, 1, 0, 0]] # 3
+  - [-1, 1, MobileNetV3_InvertedResidual, [40, 96, 5, 2, 1, 1]] # 4-p4/16
+  - [-1, 1, MobileNetV3_InvertedResidual, [40, 240, 5, 1, 1, 1]] # 5
+  - [-1, 1, MobileNetV3_InvertedResidual, [40, 240, 5, 1, 1, 1]] # 6
+  - [-1, 1, MobileNetV3_InvertedResidual, [48, 120, 5, 1, 1, 1]] # 7
+  - [-1, 1, MobileNetV3_InvertedResidual, [48, 144, 5, 1, 1, 1]] # 8
+  - [-1, 1, MobileNetV3_InvertedResidual, [96, 288, 5, 2, 1, 1]] # 9-p5/32
+  - [-1, 1, MobileNetV3_InvertedResidual, [96, 576, 5, 1, 1, 1]] # 10
+  - [-1, 1, MobileNetV3_InvertedResidual, [96, 576, 5, 1, 1, 1]] # 11
+  - [-1, 1, PSAModule, [1024]] #12 PSA
+  - [-1, 1, SPPF, [1024, 5]] #13
+
+# YOLOv8.0n AFPN head
+head:
+  - [6, 1, Conv, [128, 1, 1]] # 14 downsample backbone P3
+  - [10, 1, Conv, [256, 1, 1]] # 15 downsample backbone P4
+
+  - [[14, 15], 1, ASFF2, [128, 0]] # 16
+  - [[14, 15], 1, ASFF2, [256, 1]] # 17
+
+  - [-2, 1, C2f, [128, False]] # 18
+  - [-2, 1, C2f, [256, False]] # 19
+
+  - [13, 1, Conv, [512, 1, 1]] # 20 downsample backbone P5
+
+  - [[18, 19, 20], 1, ASFF3, [128, 0]] # 21
+  - [[18, 19, 20], 1, ASFF3, [256, 1]] # 22
+  - [[18, 19, 20], 1, ASFF3, [512, 2]] # 23
+
+  - [20, 1, C2f, [256, False]] # 24 (P3/8-small)
+  - [21, 1, C2f, [512, False]] # 25 (P4/16-medium)
+  - [22, 1, C2f, [1024, False]] # 26 (P5/32-large)
+  - [[24, 25, 26], 1, Detect, [nc]] # Detect(P3, P4, P5)
+
