@@ -1,9 +1,0 @@
-# chicken
-train: D:\Project\data\chicken_healthy\train  # train images (relative to 'path') 128 images
-val: D:\Project\data\chicken_healthy\valid # val images (relative to 'path') 128 images
-test: D:\Project\data\chicken_healthy\test # test images (optional)
-
-# Classes
-nc: 2 # 填写类别数
-
-names: ['Healthy Chickens', 'Unhealthy Chickens']
